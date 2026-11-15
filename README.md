@@ -77,3 +77,7 @@ Built with AI assistance (Claude, Anthropic): most code and the web app were wri
 ## License
 
 Code: MIT (see `LICENSE`). Data and imagery belong to their providers (NASA, USGS, ESA, Caltech, Esri) under their own terms.
+
+## Math and physics
+
+Every formula behind the map, with worked examples: [docs/MATH_AND_PHYSICS.md](docs/MATH_AND_PHYSICS.md)
