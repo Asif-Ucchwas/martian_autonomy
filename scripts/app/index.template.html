@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Martian Autonomy — Two Habitats, Every Landing Site by Road</title>
+<!--LEAFLETCSS-->
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#182033;--line:#263049;--text:#e6e9ef;--muted:#93a0b8;--teal:#5fd4c8;--h1:#ff6a3d;--h2:#ffb000;--dep:#4c8dff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.08em;font-size:15px}
+.brand span{color:var(--teal)}
+.sub{color:var(--muted);font-size:13px}
+nav{margin-left:auto;display:flex;gap:6px}
+nav button,.seg button{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on,.seg button.on{background:var(--teal);color:#06231f;border-color:var(--teal);font-weight:700}
+main{display:flex;height:calc(100% - var(--hdr,54px))}
+#mapwrap{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0;background:#1a1410}
+aside{width:400px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:14px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.card h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px}
+.kpi b{display:block;font-size:18px}
+.kpi small{color:var(--muted)}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1}
+#solbox{position:absolute;left:12px;right:12px;bottom:12px;z-index:500;background:rgba(18,24,38,.94);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+#solrow{display:flex;align-items:center;gap:10px}
+#play{background:var(--teal);color:#06231f;border:0;border-radius:8px;width:38px;height:32px;font-weight:800;cursor:pointer}
+#sol{flex:1;accent-color:var(--teal)}
+#solnum{font-weight:800;min-width:78px;text-align:right}
+#live{position:absolute;top:40px;right:12px;width:310px;z-index:600;background:rgba(14,19,31,.93);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12.5px;backdrop-filter:blur(3px)}
+.lvhead{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.lvhead b{margin-left:auto;color:var(--text);letter-spacing:0;font-size:13px}
+.lvdot{width:8px;height:8px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 0 0 rgba(255,77,77,.6);animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(255,77,77,0)}100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}}
+#lvtog{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;width:24px;height:22px;cursor:pointer;font:inherit}
+#live.min #lvbody{display:none}
+.lvc{padding:9px 10px;border-bottom:1px solid #1f283c}.lvc:last-child{border-bottom:0}
+.lvt{display:flex;align-items:center;gap:7px;margin-bottom:5px}.lvt b{font-size:13px}
+.lvst{margin-left:auto;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.04em}
+.st-drive{background:#123a5a;color:#8fd0ff}.st-site{background:#123f2f;color:#86f0b9}.st-rest{background:#3a2d12;color:#ffd27a}.st-home{background:#2a2f40;color:#c9d2e3}.st-done{background:#3b1e3b;color:#f0a6f0}
+.lvn{color:var(--text);margin-bottom:6px;line-height:1.35}
+.lvg{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px}.lvg span{color:var(--muted)}.lvg div{text-align:right;font-variant-numeric:tabular-nums}
+.lvbar{height:6px;background:#1f283c;border-radius:4px;overflow:hidden;margin:6px 0 4px}.lvbar i{display:block;height:100%;transition:width .25s}
+.st{display:flex;gap:6px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.pill{font-size:11px;padding:1px 7px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:var(--muted);font-weight:600;text-align:left;border-bottom:1px solid var(--line);padding:4px 3px}
+td{padding:5px 3px;border-bottom:1px solid #1f283c}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td{background:#1f2940}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:10px;margin-right:6px;vertical-align:middle;border-radius:2px}
+.layers label{display:inline-flex;align-items:center;gap:5px;margin:2px 10px 2px 0;font-size:12.5px;color:var(--muted)}
+.note{color:var(--muted);font-size:12px}
+.t{width:100%;border-collapse:collapse;font-size:12px}.t th,.t td{border-bottom:1px solid #ffffff14;padding:5px 6px;text-align:left;vertical-align:top}.t th{color:#9aa4b5;font-weight:600}
+.zbtn{background:#1f3b2f;color:#bff3d9;border:1px solid #2f6b4f;border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12.5px}.zbtn:hover{background:#28503f}
+.posbox{background:#0b1220cc;color:#cfd6e4;font:11px/1.3 ui-monospace,monospace;padding:3px 7px;border-radius:6px;margin:0 0 118px 10px!important}
+.warn{background:#2b2312;border:1px solid #6b5520;border-radius:10px;padding:8px 10px;font-size:12.5px}
+.ok{background:#12291f;border:1px solid #2f6b4f;border-radius:10px;padding:8px 10px;font-size:12.5px}
+.view{display:none}
+.view.on{display:block}
+#views{flex:1;overflow:auto;padding:22px;max-width:980px;margin:0 auto}
+#views h2{margin-top:0}
+#views .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.leaflet-container{font:inherit}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#121826;color:var(--text);border:1px solid var(--line)}
+.leaflet-popup-content{margin:10px 12px;font-size:13px}
+.pop h4{margin:0 0 4px;font-size:14px}
+.pop .k{color:var(--muted)}
+.stop{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#111}
+.stop.star{border-radius:4px;transform:rotate(45deg)}
+.stop.star span{transform:rotate(-45deg)}
+.hab{width:26px;height:26px;clip-path:polygon(50% 0,100% 38%,100% 100%,0 100%,0 38%);border:0}
+.crew{width:16px;height:16px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 0 0 6px rgba(95,212,200,.35)}
+.dep{width:9px;height:9px;background:var(--dep);border:1.5px solid #fff}
+.lbl{background:rgba(11,15,23,.8);color:#fff;border:0;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:none}
+.lbl:before{display:none}
+.lowzoom .crowd{display:none}
+.campz .campm{display:none}
+.grey{filter:grayscale(1) brightness(1.08) contrast(.95)}
+.sm{display:none}
+.st{flex-wrap:wrap}
+footer{position:absolute;right:8px;top:8px;z-index:500;font-size:11px;color:#cfd6e4;background:rgba(11,15,23,.75);padding:3px 8px;border-radius:6px}
+#grab{display:none}
+@media (max-width:820px){
+  header{padding:6px 10px;gap:6px;flex-wrap:nowrap}
+  .brand{font-size:13px}
+  .sub{display:none}
+  nav{margin-left:auto;gap:4px}
+  nav button{padding:8px 9px;font-size:12.5px}
+  main{display:block;position:relative;height:calc(100vh - var(--hdr,48px));height:calc(100dvh - var(--hdr,48px))}
+  #mapwrap{position:absolute;inset:0}
+  aside{position:absolute;left:0;right:0;bottom:0;width:100%;height:var(--sheet,150px);z-index:1001;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;padding:0 12px 16px;box-shadow:0 -8px 24px rgba(0,0,0,.45);transition:height .25s ease;overscroll-behavior:contain}
+  aside.drag{transition:none}
+  #grab{display:flex;position:sticky;top:0;z-index:3;flex-direction:column;align-items:center;justify-content:center;width:calc(100% + 24px);margin:0 -12px 8px;padding:9px 0 7px;background:var(--panel);border:0;border-bottom:1px solid var(--line);color:var(--muted);font:inherit;font-size:12px;cursor:grab;touch-action:none}
+  #grab i{display:block;width:44px;height:5px;border-radius:3px;background:#46526e;margin-bottom:5px}
+  #solbox{left:6px;right:6px;bottom:calc(var(--sheet,150px) + 6px);padding:8px;transition:bottom .25s ease}
+  .drag ~ #solbox,main.dragging #solbox{transition:none}
+  #play{width:44px;height:38px}
+  .posbox{display:none}
+  #live{top:auto;bottom:calc(var(--sheet,150px) + 66px);left:6px;right:6px;width:auto;font-size:11.5px;transition:bottom .25s ease}
+  #live .lx,#live .lxm{display:none}
+  #live .lvn{font-size:11px;margin-bottom:3px}
+  #live .lvg{font-size:11px}
+  #live .lvt b{font-size:12px}
+  #live .lvc{display:inline-block;width:50%;vertical-align:top;border-bottom:0}
+  #live .lvc + .lvc{border-left:1px solid #1f283c}
+  #live .lvc:only-child{width:100%}
+  .lg{display:none}
+  .sm{display:inline}
+  footer{font-size:10px;max-width:68%;top:6px;right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #solnum{min-width:60px}
+  .seg button{padding:10px 6px;font-size:13px}
+  .layers label{padding:7px 0;margin-right:14px;font-size:14px}
+  .layers input{width:18px;height:18px}
+  .zbtn{padding:10px 12px;font-size:14px}
+  td{padding:8px 3px}
+  .leaflet-touch .leaflet-bar a{width:40px;height:40px;line-height:40px;font-size:20px}
+  .nt{display:none}
+  .lowzoom .stoplbl{display:none}
+  #views{padding:14px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="brand">MARTIAN <span>AUTONOMY</span></div><div class="sub">Two habitats · two research regions · every landing site by road</div></div>
+  <nav><button data-v="map" class="on">Map</button><button data-v="habitats"><span class="lg">Habitat sites</span><span class="sm">Sites</span></button><button data-v="method">Method<span class="lg"> &amp; data</span></button></nav>
+</header>
+<main id="mapview">
+  <div id="mapwrap">
+    <div id="map"></div>
+    <footer id="basenote"></footer>
+    <div id="live"><div class="lvhead"><span class="lvdot"></span>LIVE MISSION <b id="lvsol">Sol 0</b><button id="lvtog" title="Hide / show">–</button></div><div id="lvbody"></div></div>
+    <div id="solbox">
+      <div id="solrow"><button id="play" title="Play">▶</button><input id="sol" type="range" min="0" max="288" value="0"><div id="solnum">Sol 0</div></div>
+    </div>
+  </div>
+  <aside id="side"><button id="grab" aria-label="Show more or less of the panel"><i></i><span id="grabtxt">Swipe up for details</span></button><div id="panel"></div></aside>
+</main>
+<div id="views" class="view">
+  <section id="v-habitats" class="view"></section>
+  <section id="v-method" class="view"></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const D = /*DATA*/null;
+let G_CORR, G_FILL;
+const CROWD = ['Tianwen-3 zone (Chryse)', 'Pathfinder', 'Rosalind Franklin site', 'Viking 1', 'Zhurong', 'Tianwen-3 zone (Utopia)', 'AP-8 ice site', 'AP-9 ice site', 'SpaceX candidate site'];
+const COL = {H1: getComputedStyle(document.documentElement).getPropertyValue('--h1').trim(), H2: getComputedStyle(document.documentElement).getPropertyValue('--h2').trim()};
+const fmt = n => Math.round(n).toLocaleString('en-US');
+let region = 'BOTH', sol = 0, timer = null, SOFT = false, STAY = 500;   // STAY: 500 = full loop, 30 = short-stay sortie
+const SF = D.soft;   // soft ground (TES thermal inertia < 100) + half-speed scenario
+// region data for the current mode: measured plan, or the soft-ground half-speed scenario (timings only; roads are the same)
+function RG(hid) {
+  const b = D.regions[hid];
+  if (STAY === 30 && D.stay30) {          // 30-sol short stay: best out-and-back trip, home by sol 30
+    const q = D.stay30[hid], cnt = st => q.timeline.filter(e => e.st === st).length;
+    return {...b, timeline: q.timeline, camps: q.camps,
+      summary: {...b.summary, sites: q.sites.length, total_sols: q.end, drive_sols: cnt('drive'), rest_sols: cnt('rest'), road_km: q.km, camps: q.camps.length, depots: Math.floor(q.km / 2 / 800)},
+      stops: b.stops.map(x => ({...x, reach: q.sites.includes(x.name), arrive_sol: q.arrive[x.name] != null ? q.arrive[x.name] : '–'}))};
+  }
+  if (!SOFT || !SF) return b;
+  const c = SF.scenario[hid], lg = Object.fromEntries(c.legs.map(x => [x.leg, x])), st = Object.fromEntries(c.stops.map(x => [x.name, x]));
+  return {...b, summary: c.summary, timeline: c.timeline, camps: c.camps,
+    legs: b.legs.map(l => ({...l, ...lg[l.leg]})), stops: b.stops.map(x => ({...x, ...st[x.name]}))};
+}
+const LOOP = hid => (SOFT && SF ? SF.scenario[hid].summary.total_sols : D.regions[hid].summary.total_sols);   // full-loop sols (ignores the stay switch)
+const tiTxt = v => v == null ? '' : `${v} (${v < 100 ? 'soft, dusty' : v < 150 ? 'fine-grained' : 'firm'})`;
+
+// ---------- map ----------
+const map = L.map('map', {crs: L.CRS.EPSG4326, minZoom: 1, maxZoom: 18, zoomSnap: .25, attributionControl: false, worldCopyJump: false});
+const B = [[-90, 0], [90, 360]];
+const CB = [[-62, 0], [78, 360]];
+map.fitBounds(CB); map.setMaxBounds([[-120, -40], [120, 400]]);
+const zcls = () => { const lo = map.getZoom() < (innerWidth < 820 ? 2.7 : 2.1); map.getContainer().classList.toggle('lowzoom', lo); };
+map.on('zoomend', zcls);
+const ccls = () => map.getContainer().classList.toggle('campz', map.getZoom() < 4); map.on('zoomend', ccls); ccls();
+// position readout: lat, lon, zoom and the CTX tile under the mouse (for checking imagery)
+const POS = L.control({position: 'bottomleft'});
+POS.onAdd = () => { const d = L.DomUtil.create('div', 'posbox'); d.textContent = 'move the mouse over the map'; return d; };
+POS.addTo(map);
+function posTxt(ll) {
+  const z = map.getZoom(), lon = ((ll.lng % 360) + 360) % 360, o = G_CORR.options, lvl = Math.min(Math.round(z), o.maxNativeZoom) + o.zoomOffset, sz = 180 / 2 ** lvl;
+  const tx = Math.floor((((lon + 180) % 360)) / sz), ty = Math.floor((90 - ll.lat) / sz);
+  return `${ll.lat.toFixed(4)}°, ${lon.toFixed(4)}°E · zoom ${z.toFixed(2)}${z >= o.minZoom ? ` · tile ${lvl}/${ty}/${tx}` : ''}`;
+}
+map.on('mousemove', e => { document.querySelector('.posbox').textContent = posTxt(e.latlng); });
+map.createPane('base').style.zIndex = 150;   // background under the tile strip (tilePane = 200), roads/markers stay above
+L.imageOverlay('basemap.jpg', B, {pane: 'base'}).addTo(map);
+
+// ---------- sharp road corridor: NASA Trek tiles only within 50 km of a road ----------
+const TREK = (layer, ext) => `https://trek.nasa.gov/tiles/Mars/EQ/${layer}/1.0.0/default/default028mm/{z}/{y}/{x}.${ext}`;
+const ESRI = svc => `https://astro.arcgis.com/arcgis/rest/services/OnMars/${svc}/MapServer/tile/{z}/{y}/{x}`;
+// Esri Mars tiles: GCS Mars 2000 sphere, origin (-180, 90), 512 px tiles, level n = 180/2^n deg per tile
+//   -> same grid as Leaflet EPSG4326 with tileSize 512 and zoomOffset -1
+const SOURCES = [
+  // (NASA Trek's copy of the global CTX mosaic returned 404 at our sites on 2026-11-15, so the Esri copy is used)
+  // CTX: nz 12 = service level 11 (~10 m/px); level 12 is missing in places (404 at AP-1), so level 11 is enlarged beyond zoom 12
+  {id: 'ctx', name: 'CTX photos · ~10 m (Caltech Murray Lab global mosaic)', url: ESRI('CTX'), ts: 512, off: -1, nz: 12, credit: 'NASA/JPL/MSSS/Caltech Murray Lab/Esri'},
+  {id: 'hirise', name: 'HiRISE global · patchy, ~0.25–1 m (NASA Trek)', url: TREK('HiRISE_Global', 'png'), ts: 256, off: 0, nz: 17, credit: 'NASA/JPL/University of Arizona (NASA Trek)'},
+  {id: 'viking', name: 'Viking colour · 232 m', url: TREK('Mars_Viking_MDIM21_ClrMosaic_global_232m', 'jpg'), ts: 256, off: 0, nz: 7, credit: 'NASA/USGS Viking MDIM 2.1 (NASA Trek)'},
+  {id: 'relief', name: 'MOLA/HRSC colour relief · ~200 m', url: ESRI('MColorDEM'), ts: 512, off: -1, nz: 9, credit: 'NASA/JPL/ESA/DLR/USGS/Esri'},
+];
+const CORR_KM = 50;
+const CBUCKET = new Map();
+D.corridor.forEach(([lo, la]) => { const k = Math.floor(la) + ',' + Math.floor(lo); if (!CBUCKET.has(k)) CBUCKET.set(k, []); CBUCKET.get(k).push([lo, la]); });
+const RAD = Math.PI / 180, RM = 3389.5;
+function gcKm(la1, lo1, la2, lo2) {
+  const h = Math.sin((la2 - la1) * RAD / 2) ** 2 + Math.cos(la1 * RAD) * Math.cos(la2 * RAD) * Math.sin((lo2 - lo1) * RAD / 2) ** 2;
+  return 2 * RM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function nearRoad(lat, lon, km) {           // lon in 0..360
+  const dLat = km / 59.2, dLon = Math.min(180, km / (59.2 * Math.max(0.15, Math.cos(lat * RAD))));
+  for (let a = Math.floor(lat - dLat); a <= Math.floor(lat + dLat); a++)
+    for (let o = Math.floor(lon - dLon); o <= Math.floor(lon + dLon); o++) {
+      const pts = CBUCKET.get(a + ',' + (((o % 360) + 360) % 360));
+      if (pts) for (const p of pts) if (gcKm(lat, lon, p[1], p[0]) <= km) return true;
+    }
+  return false;
+}
+const CorridorLayer = L.TileLayer.extend({
+  createTile(c, done) {
+    const Dg = 180 * (this.options.tileSize / 256) / 2 ** c.z, latC = 90 - (c.y + .5) * Dg, lonC = ((-180 + (c.x + .5) * Dg) % 360 + 360) % 360;
+    const half = Math.hypot(Dg / 2 * 59.2 * Math.max(.15, Math.cos(latC * RAD)), Dg / 2 * 59.2);
+    if (this.options.roadsOnly && !nearRoad(latC, lonC, CORR_KM + half)) { const t = document.createElement('div'); setTimeout(() => done(null, t), 0); return t; }
+    return L.TileLayer.prototype.createTile.call(this, c, done);
+  },
+  // Esri's CTX service sometimes returns the SAME picture for neighbouring tile addresses (re-encoded, so the bytes differ).
+  // Every loaded tile is shrunk to 24 x 24 grey pixels and compared with the other tiles of the same level on screen;
+  // a near-identical pair is a server copy, so both are hidden and the grey Viking fill shows instead of a false photo.
+  onAdd(map) {
+    if (this.options.dedupe) {
+      this._sig = new Map();
+      this.on('tileload', this._dedupe, this);
+      this.on('tileunload', e => this._sig.delete(this._tileCoordsToKey(e.coords)), this);
+    }
+    return L.TileLayer.prototype.onAdd.call(this, map);
+  },
+  _dedupe(e) {
+    const t = e.tile, z = e.coords.z;
+    if (!t.naturalWidth) return;
+    let px;
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 24;
+      const g = cv.getContext('2d', {willReadFrequently: true}); g.drawImage(t, 0, 0, 24, 24);
+      const d = g.getImageData(0, 0, 24, 24).data; px = new Float32Array(576);
+      for (let i = 0; i < 576; i++) px[i] = (d[4 * i] + d[4 * i + 1] + d[4 * i + 2]) / 3;
+    } catch (err) { return; }   // pixels not readable (no CORS): keep the tile
+    for (const q of this._sig.values()) {
+      if (q.z !== z) continue;
+      let diff = 0; for (let i = 0; i < 576; i++) diff += Math.abs(px[i] - q.px[i]);
+      if (diff / 576 < 1.5) { t.style.visibility = 'hidden'; q.tile.style.visibility = 'hidden'; DUPES.add(this._tileCoordsToKey(e.coords)); DUPES.add(q.key); }
+    }
+    const key = this._tileCoordsToKey(e.coords);
+    this._sig.set(key, {z, px, tile: t, key});
+  }
+});
+const DUPES = new Set();   // tile keys hidden as server copies (for checking)
+let corrSrc = SOURCES[0];
+let roadsOnly = false;   // default: sharp imagery fills the whole view once zoomed in (zoom >= 6)
+// high-density screens (phones, Retina laptops): half-size tiles from one level deeper, so photos are not blurry
+const RET = L.Browser.retina;
+const TOPT = s => RET ? {tileSize: s.ts / 2, zoomOffset: s.off + 1, maxNativeZoom: s.nz - 1, minZoom: 5} : {tileSize: s.ts, zoomOffset: s.off, maxNativeZoom: s.nz, minZoom: 6};
+const makeCorr = s => new CorridorLayer(s.url, {...TOPT(s), maxZoom: 18, zIndex: 2, attribution: s.credit, roadsOnly, dedupe: s.url.includes('arcgis'), crossOrigin: s.url.includes('arcgis') ? 'anonymous' : false});
+G_CORR = makeCorr(corrSrc);
+// gap filler under the sharp layer: Viking MDIM 2.1 greyscale (232 m, global) — fills CTX/HiRISE coverage gaps
+const FILL = {url: TREK('Mars_Viking_MDIM21_ClrMosaic_global_232m', 'jpg'), ts: 256, off: 0, nz: 7, credit: 'NASA/USGS Viking MDIM 2.1 (NASA Trek)'};
+const makeFill = () => new CorridorLayer(FILL.url, {...TOPT(FILL), maxZoom: 18, zIndex: 1, roadsOnly, className: 'grey'});
+// sharp site close-ups from NASA Trek: controlled CTX block mosaics (~6 m) and HiRISE site mosaics (~25-50 cm).
+// bbox = Trek's own WGS84 box (lon -180..180), nz = deepest Trek level; every layer returned real tiles in trek_probe.py
+const SITE_TILES = [
+  ['Arcadia_CTX_BlockAdj_dd', 'Arcadia (Habitat 1 area)', 'ctx', [169.68, 37.02, 174.34, 40.87], 12],
+  ['Arcadia_Planitia_CTX_BlockAdj_dd', 'Arcadia Planitia', 'ctx', [-173.65, 44.51, -168.75, 47.89], 12],
+  ['Erebus_Montes_CTX_BlockAdj_dd', 'Erebus Montes', 'ctx', [-170.08, 37.31, -165.72, 40.69], 12],
+  ['InSightCTXMosaic_112917', 'InSight (Habitat 2)', 'ctx', [133.94, 3.73, 137.28, 5.07], 13],
+  ['Cerberus_CTX_BlockAdj_dd', 'Cerberus', 'ctx', [160.19, 8.20, 163.81, 11.74], 12],
+  ['Gale_CTX_BlockAdj_dd', 'Gale crater', 'ctx', [135.18, -6.57, 139.24, -2.81], 12],
+  ['curiosity_ctx_mosaic', 'Curiosity route', 'ctx', [136.28, -7.21, 139.39, -3.58], 10],
+  ['Jezero_CTX_BlockAdj_dd', 'Jezero region', 'ctx', [75.15, 15.91, 78.87, 19.45], 12],
+  ['JEZ_ctx_B_soc_008_orthoMosaic_6m_Eqc_latTs0_lon0', 'Jezero crater', 'ctx', [77.16, 18.21, 77.70, 18.72], 13],
+  ['Gusev_CTX_BlockAdj_dd', 'Gusev crater', 'ctx', [173.25, -16.22, 178.46, -10.99], 12],
+  ['Viking_CTX_BlockAdj_dd', 'Viking 1 region', 'ctx', [-50.13, 20.61, -46.47, 23.99], 12],
+  ['b21_017819_2025_xn_22n048w', 'Viking 1 site', 'ctx', [-48.24, 21.89, -47.64, 22.66], 12],
+  ['b16_015887_2280_xn_48n225w', 'Viking 2 site', 'ctx', [133.79, 46.40, 135.02, 48.98], 12],
+  ['Hypanis_Delta_CTX_BlockAdj_dd', 'Hypanis delta (Tianwen-3 Chryse)', 'ctx', [-47.03, 10.01, -43.57, 13.39], 12],
+  ['ESP_058005_1845_RED_spline_rect', 'InSight lander', 'hirise', [135.57, 4.33, 135.70, 4.67], 17],
+  ['curiosity_hirise_mosaic', 'Curiosity traverse', 'hirise', [137.12, -4.93, 137.73, -4.25], 16],
+  ['JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first_dd', 'Perseverance / Jezero', 'hirise', [77.22, 18.31, 77.58, 18.67], 17],
+  ['HiRISE_ColumbiaHills', 'Columbia Hills (Spirit)', 'hirise', [175.32, -14.85, 175.80, -14.25], 16],
+  ['spirit_hirise_mosaic', 'Spirit traverse', 'hirise', [175.43, -14.69, 175.59, -14.54], 17],
+  ['HiRISE_Opportunity', 'Opportunity traverse', 'hirise', [-5.62, -2.83, -4.93, -1.89], 17],
+  ['phoenix_hirise_mosaic', 'Phoenix lander', 'hirise', [-125.89, 68.17, -125.66, 68.25], 16],
+  ['sojourner_hirise_mosaic', 'Pathfinder / Sojourner', 'hirise', [-33.29, 19.02, -33.21, 19.16], 16],
+  ['PSP_001521_2025_RED', 'Viking 1 lander', 'hirise', [-48.03, 22.09, -47.86, 22.46], 17],
+  ['PSP_001501_2280_RED', 'Viking 2 lander', 'hirise', [134.20, 47.56, 134.40, 47.78], 16],
+];
+const SITES = L.layerGroup();
+SITE_TILES.forEach(([id, name, kind, b, nz]) => {
+  const s = {ts: 256, off: 0, nz};
+  // Leaflet compares tile boxes in -180..180 longitude, so the bounds stay in Trek's own convention
+  new L.TileLayer(TREK(id, 'png'), {...TOPT(s), minZoom: Math.min(TOPT(s).minZoom, 6), maxZoom: 18, zIndex: kind === 'hirise' ? 4 : 3,
+    bounds: [[b[1], b[0]], [b[3], b[2]]], attribution: name}).addTo(SITES);
+});
+G_FILL = makeFill();
+// exact +-50 km band outline (drawn as a 100 km-wide translucent stroke, resized on zoom)
+const BAND = L.layerGroup();
+function bandWidthPx() { return 2 * CORR_KM / 59.2 * (512 * 2 ** map.getZoom() / 360); }   // 1 deg of latitude = 59.2 km
+function buildBand() {
+  BAND.clearLayers();
+  const segs = [];
+  Object.values(D.regions).forEach(r => r.legs.forEach(l => segs.push(l.geo)));
+  segs.push(D.link.geo);
+  segs.forEach(g => splitLine(g).forEach(s => L.polyline(s, {color: '#ffffff', opacity: .09, weight: bandWidthPx(), lineCap: 'round', lineJoin: 'round', interactive: false}).addTo(BAND)));
+}
+// region boundary is a planning line, not a road: show it only on the overview
+const bndOn = () => document.querySelector('[data-l=boundary]') ? document.querySelector('[data-l=boundary]').checked : true;
+map.on('zoomend', () => { if (map.getZoom() >= 5) map.removeLayer(G.boundary); else if (bndOn() && !map.hasLayer(G.boundary)) G.boundary.addTo(map); });
+map.on('zoomend', () => { if (map.getZoom() >= 6 && roadsOnly) { if (!map.hasLayer(BAND)) BAND.addTo(map); BAND.eachLayer(l => l.setStyle({weight: bandWidthPx()})); } else map.removeLayer(BAND); });
+function setCorrSource(id) {
+  corrSrc = SOURCES.find(s => s.id === id) || SOURCES[0];
+  const on = map.hasLayer(G_CORR); if (on) { map.removeLayer(G_CORR); map.removeLayer(G_FILL); }
+  G_CORR = makeCorr(corrSrc); G_FILL = makeFill(); G.corridor = G_CORR;
+  if (on) { G_FILL.addTo(map); G_CORR.addTo(map); }
+  map.fire('zoomend');   // band follows the roads-only switch
+  document.getElementById('basenote').textContent = BASENOTE + ' · zoomed imagery: ' + corrSrc.credit;
+}
+document.getElementById('basenote').textContent = BASENOTE + ' · zoom in for CTX photos (NASA/JPL/MSSS/Caltech Murray Lab/Esri) and HiRISE site close-ups (NASA/JPL/UArizona via NASA Trek)' + (D.real_shapes ? '' : ' · road lines drawn as arcs (routed shapes pending)');
+
+function splitLine(coords) { // coords [lon,lat] 0..360 -> Leaflet segments [[lat,lon]]
+  const out = []; let cur = [];
+  coords.forEach((c, i) => {
+    if (i && Math.abs(c[0] - coords[i - 1][0]) > 180) { out.push(cur); cur = []; }
+    cur.push([c[1], c[0]]);
+  });
+  out.push(cur); return out;
+}
+const G = {corridor: G_CORR, sites: SITES, zooms: L.layerGroup(), slope: L.layerGroup(), soft: L.layerGroup(), tiov: L.layerGroup(), roads: L.layerGroup(), camps: L.layerGroup(), depots: L.layerGroup(), stops: L.layerGroup(), boundary: L.layerGroup(), link: L.layerGroup(), trail: L.layerGroup(), crew: L.layerGroup(), habs: L.layerGroup()};
+const byRegion = {H1: [], H2: []}, STOPM = [];
+function applyStay() { STOPM.forEach(o => { const op = STAY === 30 && !D.stay30[o.hid].sites.includes(o.name) ? .22 : 1; o.m.setOpacity(op); const t = o.m.getTooltip(); if (t) t.setOpacity(op === 1 ? .9 : .3); }); }
+if (SF && SF.overlay) L.imageOverlay('ti_overlay.png', [[-90, 0], [90, 360]], {opacity: .75, interactive: false}).addTo(G.tiov);
+
+D.boundary.forEach(seg => L.polyline(seg.map(p => [p[1], p[0]]), {color: '#ffffff', weight: 1.5, dashArray: '2 7', opacity: .6, interactive: false}).addTo(G.boundary));
+splitLine(D.link.geo).forEach(s => L.polyline(s, {color: '#e6e9ef', weight: 3, opacity: .9}).addTo(G.link)
+  .bindPopup(`<div class="pop"><h4>Link road · Habitat 1 ↔ Habitat 2</h4>${fmt(D.link.km)} km of road (${fmt(D.link.straight)} km straight)<br>${fmt(D.link.hours)} h driving ≈ ${(D.link.hours / 8).toFixed(1)} driving sols</div>`));
+
+for (const hid of ['H1', 'H2']) {
+  const r = D.regions[hid], c = COL[hid];
+  // routed legs start/end on pass-1 grid cells (5.2 km), up to ~3 km from the site; where that is more than 200 m from the site, show the short final approach dashed
+  const pos = n => { if (n === 'HABITAT') return [r.lat, r.lon]; const q = r.stops.find(x => x.name === n); return q ? [q.lat, q.lon] : null; };
+  r.legs.forEach(l => [[l.geo[0], l.frm], [l.geo[l.geo.length - 1], l.to]].forEach(([g, n]) => {
+    const q = pos(n); if (!q) return; const d = gcKm(q[0], q[1], g[1], g[0]);
+    if (d > .2 && d < 30) L.polyline([[g[1], g[0]], q], {color: c, weight: 2.4, dashArray: '5 5', opacity: .95}).addTo(G.roads)
+      .bindTooltip(`Final approach to ${nm(n)}: ${d.toFixed(1)} km (legs were joined on the 5.2 km grid of pass 1; this stretch is not slope-checked)`);
+  }));
+  r.legs.forEach(l => splitLine(l.geo).forEach(s => {
+    const halo = L.polyline(s, {color: '#000', weight: 6, opacity: .35}).addTo(G.roads);
+    const pl = L.polyline(s, {color: c, weight: 3.2, opacity: .95}).addTo(G.roads)
+      .bindPopup(`<div class="pop"><h4>${hid} leg ${l.leg}: ${nm(l.frm)} → ${nm(l.to)}</h4>
+        <span class="k">Road</span> ${fmt(l.road_km)} km · <span class="k">straight</span> ${fmt(l.straight_km)} km (×${l.factor})<br>
+        <span class="k">Driving</span> ${l.drive_sols} sols · sol ${l.depart}–${l.arrive}<br>
+        <span class="k">Steepest</span> ${l.max_slope}° · <span class="k">up/down</span> ${fmt(l.climb)} / ${fmt(l.descent)} m<br>
+        <span class="k">Terrain</span> ${l.source === 'MOLA 463 m' ? 'MOLA 463 m route (road463.py)' : 'MOLA global route (5.2 km cells)'}
+        ${l.km_soft != null ? `<br><span class="k">Soft ground</span> ${fmt(l.km_soft)} km (thermal inertia &lt; 100) · lowest ${l.ti_min}, median ${l.ti_med}` : ''}</div>`);
+    byRegion[hid].push(halo, pl);
+  }));
+  r.depots.forEach(dp => byRegion[hid].push(L.marker([dp.lat, dp.lon], {icon: L.divIcon({className: '', html: '<div class="dep"></div>', iconSize: [9, 9]})})
+    .bindTooltip(`Supply depot ${dp.id} · road km ${fmt(dp.km)}${dp.robot ? ` · placed by robot ${dp.robot} on robot sol ${dp.rsol}` : ''} · before the crew lands`).addTo(G.depots)));
+  r.stops.forEach(s => {
+    const star = s.kind === 'active rover';
+    const ic = L.divIcon({className: '', iconSize: [22, 22], html: `<div class="stop ${star ? 'star' : ''}" style="border-color:${c}"><span>${s.stop}</span></div>`});
+    const m = L.marker([s.lat, s.lon % 360], {icon: ic}).addTo(G.stops)
+      .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [12, 0], className: 'lbl stoplbl' + (CROWD.includes(s.name) ? ' crowd' : '')})
+      .bindPopup(`<div class="pop"><h4>${s.stop}. ${s.name}</h4>${s.who} · ${s.place}<br><span class="k">Status</span> ${s.kind}<br>
+        <span class="k">From habitat</span> ${fmt(s.km_from_habitat)} km straight${s.ti != null ? `<br><span class="k">Ground (thermal inertia)</span> ${tiTxt(s.ti)}` : ''}
+        ${s.name === 'SpaceX candidate site' ? `<br><br>${zoomHtml(D.zoom.SPACEX)}` : ''}${s.name.startsWith('AP-') ? '<br><br>Published ice site: ice less than 1 m below the surface (Luzzi et al. 2025, JGR Planets)' : ''}${s.name === 'Curiosity' ? `<br><br><b>Measured on 463 m MOLA:</b> ${D.road_m2.km} km road from Habitat 2, ${D.road_m2.sols_out} sols out / ${D.road_m2.sols_back} back, steepest ${D.road_m2.max_slope}°<br>${zoomHtml(D.zoom.GALE)}` : ''}</div>`);
+    byRegion[hid].push(m); STOPM.push({hid, name: s.name, m});
+  });
+  const hz = D.zoom[hid];
+  const hm = L.marker([r.lat, r.lon], {icon: L.divIcon({className: '', iconSize: [26, 26], html: `<div class="hab" style="background:${c}"></div>`}), zIndexOffset: 1000}).addTo(G.habs)
+    .bindTooltip(r.name.split(' · ')[0], {permanent: true, direction: hid === 'H1' ? 'bottom' : 'top', offset: [0, hid === 'H1' ? 16 : -14], className: 'lbl'})
+    .bindPopup(`<div class="pop"><h4>${r.name}</h4>${r.place}<br>${hid === 'H2' ? 'Home site: InSight lander, 1.2 km away (on foot)<br>' : ''}${r.ti != null ? `<span class="k">Ground (thermal inertia)</span> ${tiTxt(r.ti)}<br>` : ''}<br>${zoomHtml(hz)}</div>`);
+  byRegion[hid].push(hm);
+}
+function nm(x) { return x === 'HABITAT' ? 'habitat' : x; }
+function zoomHtml(z) {
+  return `<b>${z.site}</b> · ${z.px > 5 ? 'CTX' : 'HiRISE'} terrain ${z.dtm} (${z.px} m)<br>
+  <span class="k">Slope</span> median ${z.median}° · 95% under ${z.p95}° · pad-quality ground ${z.padq}%<br>
+  <span class="k">Pad</span> ${z.pad[0].toFixed(4)}°, ${z.pad[1].toFixed(4)}°E — ${z.pad_note}<br>
+  <span class="k">Habitat</span> ${z.hab[0].toFixed(4)}°, ${z.hab[1].toFixed(4)}°E — ${z.hab_note}<br>
+  <span class="k">Walking zone</span> ${z.walk[0]} km² in 1 h · ${z.walk[1]} km² in 2 h · ${z.walk[2]} km² within the 10 km walk-back`;
+}
+Object.entries(G).forEach(([k, g]) => { if (k !== 'tiov' && k !== 'slope') g.addTo(map); });   // dust map and slope colours are off by default (Layers) so the photos stay clean
+G_FILL.addTo(map);
+
+if (SF) SF.stretches.forEach(st => splitLine(st.geo).forEach(sg => L.polyline(sg, {color: '#c13cff', weight: 13, opacity: .5, lineCap: 'butt', reg: st.region}).addTo(G.soft)
+  .bindPopup(`<div class="pop"><h4>Soft ground · ${fmt(st.km)} km</h4>${st.region === 'LINK' ? 'Link road H1 ↔ H2' : `${st.region} leg ${st.leg}: ${nm(st.from)} → ${nm(st.to)}`}<br>
+    <span class="k">Thermal inertia</span> lowest ${st.ti_min}, median ${st.ti_median} (below 100 = loose dust)<br>
+    <span class="note">TES night thermal inertia, Putzig &amp; Mellon 2007, ~3 km pixels. Flags broad dusty ground, not single dunes.</span></div>`)));
+// dust bands: wide on the overview, a thin translucent strip when zoomed in so the photo stays readable
+function softStyle() { const hi = map.getZoom() >= 8; G.soft.eachLayer(l => l.setStyle({weight: hi ? 6 : 13, opacity: region === 'BOTH' || l.options.reg === region ? (hi ? .45 : .5) : 0})); }
+map.on('zoomend', softStyle);
+// ---------- site zoom-ins (slope maps from HiRISE / CTX terrain) ----------
+const ZBOX = {}, ZMK = L.layerGroup();   // ZMK: pad / habitat markers, only when zoomed in
+Object.entries(D.zoom).forEach(([k, z]) => {
+  if (!z.img) return;
+  L.imageOverlay(z.img, z.bounds, {opacity: .85, interactive: false}).addTo(G.slope);
+  ZBOX[k] = L.rectangle(z.bounds, {color: '#7fe3b3', weight: 1.5, dashArray: '4 3', fill: false}).addTo(G.zooms)
+    .bindTooltip(`${z.site} · slope map (zoom in)`, {direction: 'top'}).bindPopup(`<div class="pop"><h4>${z.site}</h4>${zoomHtml(z)}<br><button class="zbtn" style="margin:6px 0" onclick="slopeOn(true)">Show slope colours</button><br><span class="note">Green = pad-quality ground · yellow→red = steeper than the 16.7° walking limit (red ≥ 35°)</span></div>`);
+  const sq = (ll, col, tip) => L.marker(ll, {icon: L.divIcon({className: '', iconSize: [14, 14], html: `<div style="width:12px;height:12px;border:2px solid #fff;background:${col};${tip === 'Pad' ? '' : 'border-radius:50%'}"></div>`}), zIndexOffset: 900});
+  sq(z.pad, '#ff4d6d', 'Pad').bindTooltip(`Landing pad · ${z.site}`, {direction: 'right'}).bindPopup(`<div class="pop"><h4>Landing pad</h4>${z.site}<br>${z.pad[0].toFixed(5)}°, ${z.pad[1].toFixed(5)}°E<br>${z.pad_note}</div>`).addTo(ZMK);
+  sq(z.hab, '#7fe3b3', 'Hab').bindTooltip(`Habitat / camp · ${z.site}`, {direction: 'right'}).bindPopup(`<div class="pop"><h4>Habitat / camp</h4>${z.site}<br>${z.hab[0].toFixed(5)}°, ${z.hab[1].toFixed(5)}°E<br>${z.hab_note}<br><span class="k">Walking zone</span> ${z.walk[0]} km² in 1 h · ${z.walk[1]} km² in 2 h · reach ${z.reach_km} km</div>`).addTo(ZMK);
+  L.polyline([z.pad, z.hab], {color: '#fff', weight: 1.5, dashArray: '3 4', opacity: .9}).addTo(ZMK);
+});
+function slopeOn(on) { on ? G.slope.addTo(map) : map.removeLayer(G.slope); const cb = document.querySelector('[data-l=slope]'); if (cb) cb.checked = on; }
+const zmkUpdate = () => map.getZoom() >= 9 ? G.zooms.addLayer(ZMK) : G.zooms.removeLayer(ZMK);
+map.on('zoomend', zmkUpdate);
+function goZoom(k) {
+  document.querySelector('nav button[data-v=map]').click();
+  setTimeout(() => { if (!map.hasLayer(G.zooms)) G.zooms.addTo(map); slopeOn(true); sheet('peek'); map.fitBounds(D.zoom[k].bounds, {padding: [20, 20]}); }, 120);
+}
+function drawCamps() {
+  G.camps.clearLayers();
+  const sel = region === 'BOTH' ? ['H1', 'H2'] : [region];
+  sel.forEach(hid => RG(hid).camps.forEach(cp => L.circleMarker([cp.lat, cp.lon], {className: 'campm', radius: 2.4, color: '#fff', weight: 1, fillColor: COL[hid], fillOpacity: 1})
+    .bindTooltip(`Camp ${cp.n} · end of sol ${cp.sol} · ${fmt(cp.km)} km`).addTo(G.camps)));
+}
+// ---------- crew + timeline ----------
+const crew = {}; const trail = {};
+for (const hid of ['H1', 'H2']) {
+  crew[hid] = L.marker([0, 0], {icon: L.divIcon({className: '', iconSize: [16, 16], html: `<div class="crew" style="background:${COL[hid]}"></div>`}), zIndexOffset: 2000}).addTo(G.crew)
+    .bindTooltip('', {permanent: true, direction: 'left', offset: [-12, 0], className: 'lbl'});
+  trail[hid] = L.layerGroup().addTo(G.trail);
+}
+function tlAt(hid, s) { const t = RG(hid).timeline; return t[Math.min(s, t.length - 1)]; }
+function drawCrew() {
+  const sel = region === 'BOTH' ? ['H1', 'H2'] : [region];
+  let html = '';
+  for (const hid of ['H1', 'H2']) {
+    const on = sel.includes(hid);
+    trail[hid].clearLayers();
+    if (!on) { crew[hid].setOpacity(0); crew[hid].closeTooltip(); continue; }
+    const r = RG(hid), e = tlAt(hid, sol), done = sol >= r.timeline.length - 1;
+    crew[hid].setOpacity(1).setLatLng([e.lat, e.lon]); crew[hid].setTooltipContent(`${hid} crew · sol ${Math.min(sol, r.summary.total_sols)}`); crew[hid].openTooltip();
+    const pts = r.timeline.slice(0, Math.min(sol, r.timeline.length - 1) + 1).map(t => [t.lon, t.lat]);
+    if (pts.length > 1) splitLine(pts).forEach(s => L.polyline(s, {color: '#ffffff', weight: 5, opacity: .9}).addTo(trail[hid]));
+    const nxt = r.stops.find(s => s.arrive_sol > Math.min(sol, r.timeline.length - 1));
+    const lab = {home: 'At habitat', drive: 'Driving', rest: 'Rest sol', site: 'Research'}[e.st];
+    const s0 = Math.min(sol, r.timeline.length - 1), leg = r.legs.find(l => l.leg === e.leg), nLegs = r.legs.length;
+    const seen = r.stops.filter(x => x.stop > 0 && x.arrive_sol !== '–' && x.arrive_sol <= s0).length, nSites = r.stops.filter(x => x.stop > 0 && x.arrive_sol !== '–').length;
+    const pct = Math.min(100, 100 * e.km / Math.max(1, r.summary.road_km));
+    const dose = D.rad ? D.rad.cruise * D.rad.cruise_days + D.rad.surface * D.rad.sol_days * s0 : null;
+    const stc = done ? 'done' : e.st, stl = done ? (STAY === 30 ? 'HOME · STAY DONE' : 'ROUTE DONE') : lab.toUpperCase();
+    html += `<div class="lvc"><div class="lvt"><span class="dot" style="background:${COL[hid]}"></span><b>${hid} crew</b><span class="note lx">${hid === 'H1' ? 'Ice colony' : 'Sun colony'}</span><span class="lvst st-${stc}">${stl}</span></div>
+      <div class="lvn">${done ? (STAY === 30 ? 'Back at the habitat' : 'Research route finished, back at the habitat') : e.note}</div>
+      <div class="lvbar"><i style="width:${pct.toFixed(1)}%;background:${COL[hid]}"></i></div>
+      <div class="lvg">
+        <span>Road</span><div>${fmt(e.km)} / ${fmt(r.summary.road_km)} km</div>
+        <span class="lxm">Leg</span><div class="lxm">${leg && !done && e.st !== 'home' ? `${leg.leg} of ${nLegs} · ${nm(leg.frm)} → ${nm(leg.to)}` : '–'}</div>
+        <span>Next stop</span><div>${nxt && !done ? `<b>${nxt.name}</b> · sol ${nxt.arrive_sol}` : done ? 'none' : `Home · sol ${r.summary.total_sols}`}</div>
+        <span class="lx">Sites visited</span><div class="lx">${seen} of ${nSites}</div>
+        <span class="lx">Position</span><div class="lx">${(+e.lat).toFixed(2)}°, ${(+e.lon).toFixed(2)}°E</div>
+        ${dose != null ? `<span class="lx">Radiation (incl. trip)</span><div class="lx">${Math.round(dose)} mSv of ${D.rad.limit}</div>` : ''}
+        <span class="lx">Route ends</span><div class="lx">sol ${r.summary.total_sols}${done ? '' : ` · ${r.summary.total_sols - s0} to go`}</div>
+      </div></div>`;
+  }
+  document.getElementById('lvbody').innerHTML = html;
+  document.getElementById('lvsol').textContent = `Sol ${sol}`;
+  document.getElementById('solnum').textContent = `Sol ${sol}`;
+}
+document.getElementById('lvtog').onclick = () => { const L = document.getElementById('live'); L.classList.toggle('min'); document.getElementById('lvtog').textContent = L.classList.contains('min') ? '+' : '–'; };
+const slider = document.getElementById('sol');
+slider.oninput = () => { sol = +slider.value; drawCrew(); };
+document.getElementById('play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; document.getElementById('play').textContent = '▶'; return; }
+  if (sol >= +slider.max) sol = 0;
+  document.getElementById('play').textContent = '❚❚';
+  timer = setInterval(() => { sol = Math.min(+slider.max, sol + 1); slider.value = sol; drawCrew(); if (sol >= +slider.max) document.getElementById('play').click(); }, 90);
+};
+
+// ---------- panel ----------
+function setRegion(r) {
+  region = r;
+  for (const hid of ['H1', 'H2']) byRegion[hid].forEach(l => { const show = r === 'BOTH' || r === hid; if (show && !map.hasLayer(l)) l.addTo(map); if (!show && map.hasLayer(l)) map.removeLayer(l); });
+  G.link.eachLayer(l => r === 'BOTH' ? l.addTo(map) : map.removeLayer(l));
+  softStyle();
+  slider.max = r === 'BOTH' ? Math.max(RG('H1').summary.total_sols, RG('H2').summary.total_sols) : RG(r).summary.total_sols;
+  if (sol > +slider.max) { sol = +slider.max; slider.value = sol; }
+  applyStay(); drawCamps(); panel(); drawCrew();
+  if (r !== 'BOTH') {
+    const pts = []; D.regions[r].legs.forEach(l => l.geo.forEach(c => pts.push([c[1], c[0]])));
+    const lons = pts.map(p => p[1]); const span = Math.max(...lons) - Math.min(...lons);
+    span > 250 ? map.fitBounds(CB) : map.fitBounds(pts, FITPAD());
+  } else if (MOB()) map.fitBounds(splitLine(D.link.geo).flat(), {...FITPAD(), maxZoom: 3}); else map.fitBounds(CB);
+  zcls();
+}
+function regionCard(hid) {
+  const r = RG(hid), s = r.summary;
+  return `<div class="card" style="border-color:${COL[hid]}55">
+    <h3 style="color:${COL[hid]}">${r.name}</h3>
+    <div class="note">${r.place} · ${r.lat.toFixed(2)}°N ${r.lon.toFixed(2)}°E · ${r.note}</div>
+    <div class="kpis" style="margin-top:8px">
+      <div class="kpi"><b>${STAY === 30 ? `${s.sites} of ${D.regions[hid].stops.length}` : s.sites}</b><small>${STAY === 30 ? 'sites reached' : 'sites'}${s.home_sites.length ? ' + home' : ''}</small></div>
+      <div class="kpi"><b>${fmt(s.road_km)}</b><small>km of road</small></div>
+      <div class="kpi"><b>${s.total_sols}</b><small>${STAY === 30 ? 'sols · home by' : 'sols' + (SOFT ? ' · scenario' : '')}</small></div>
+      <div class="kpi"><b>${s.drive_sols}</b><small>driving sols</small></div>
+      <div class="kpi"><b>${s.camps}</b><small>road camps</small></div>
+      <div class="kpi"><b>${s.depots}</b><small>supply depots</small></div>
+    </div></div>`;
+}
+function panel() {
+  let h = `<div class="seg"><button data-r="BOTH">Both</button><button data-r="H1">Habitat 1 · ice</button><button data-r="H2">Habitat 2 · sun</button></div>
+    <div class="seg"><button data-stay="500">500-sol stay · full route</button><button data-stay="30">30-sol stay</button></div>`;
+  if (region === 'BOTH') {
+    h += regionCard('H1') + regionCard('H2');
+    h += `<div class="card"><h3>What it means for the 2 crew</h3>
+      ${STAY === 30 ? `<p style="margin:0 0 6px"><b>30-sol stay:</b> each crew makes one out-and-back trip and is home by sol 30.</p>
+      <div class="warn"><b style="color:#ff6b35">H1</b> reaches ${D.stay30.H1.sites.join(' and ')}, home by sol ${D.stay30.H1.end} (${fmt(D.stay30.H1.km)} km).<br>
+      <b style="color:#f5b800">H2</b> reaches InSight on foot and ${D.stay30.H2.sites.join(' and ')} (the loop driven backwards), home by sol ${D.stay30.H2.end} (${fmt(D.stay30.H2.km)} km).<br>
+      That is ${D.stay30.H1.sites.length + D.stay30.H2.sites.length + 1} of ${D.regions.H1.stops.length + D.regions.H2.stops.length + 1} sites. Faded markers are out of reach. Exploring every site needs the 500-sol stay.</div>` :
+      `<p style="margin:0 0 6px">A full research route takes <b>${Math.min(RG('H1').summary.total_sols, RG('H2').summary.total_sols)}–${Math.max(RG('H1').summary.total_sols, RG('H2').summary.total_sols)} sols</b>${SOFT ? ' in the half-speed scenario' : ''}.</p>
+      <div class="warn">It does not fit a 30-sol short stay. It fits a long-stay mission (~500 sols) with ~${500 - Math.max(RG('H1').summary.total_sols, RG('H2').summary.total_sols)} sols spare. Switch to <b>30-sol stay</b> above to see what a short visit reaches.</div>`}
+      <p class="note" style="margin-bottom:0">Link road between habitats: ${fmt(D.link.km)} km, ≈ ${SOFT && SF ? SF.link.sols_scn : (D.link.hours / 8).toFixed(1)} driving sols${SF ? ` · ${fmt(SF.link.km_soft)} km soft ground` : ''}.</p></div>`;
+    if (SF) h += softCard();
+    if (D.calendar) h += calendarCard();
+    if (D.robots) h += robotCard(['H1', 'H2']);
+    if (D.climate) h += climateCard();
+    if (D.rad) h += radCard();
+  } else {
+    const r = RG(region);
+    h += regionCard(region);
+    if (SF) h += softCard();
+    if (D.robots) h += robotCard([region]);
+    if (D.climate) h += climateCard();
+    if (D.rad) h += radCard();
+    h += `<div class="card"><h3>Stops · tap to jump</h3><table><tr><th>#</th><th>Site</th><th class="n">Arrive</th><th class="n">From hab.</th></tr>` +
+      r.stops.map(s => `<tr class="click" data-sol="${s.arrive_sol}" data-ll="${s.lat},${s.lon % 360}"><td>${s.stop}</td><td>${s.name}<br><span class="note">${s.who}</span></td><td class="n">sol ${s.arrive_sol}</td><td class="n">${fmt(s.km_from_habitat)} km</td></tr>`).join('') +
+      `</table></div>`;
+    h += `<div class="card"><h3>Legs · measured on MOLA terrain</h3><table><tr><th>Leg</th><th class="n">Road km</th><th class="n">×</th><th class="n">Sols</th><th class="n">Max°</th><th class="n">Soft km</th></tr>` +
+      r.legs.map(l => `<tr class="click" data-sol="${l.depart}" data-leg="${l.leg}"><td>${l.leg}. ${nm(l.frm)} → ${nm(l.to)}</td><td class="n">${fmt(l.road_km)}</td><td class="n">${l.factor}</td><td class="n">${l.drive_sols}</td><td class="n">${l.max_slope}</td><td class="n" style="${l.km_soft >= 20 ? 'color:#d58bff;font-weight:600' : ''}">${l.km_soft != null ? fmt(l.km_soft) : '–'}</td></tr>`).join('') +
+      `</table><p class="note" style="margin-bottom:0">× = road ÷ straight line. Max° = steepest 463 m cell on the road (limit 12°). Soft km = road on loose dust (TES thermal inertia &lt; 100).</p></div>`;
+  }
+  h += `<div class="card"><h3>Layers</h3><div class="layers">` +
+    [['corridor', 'Sharp imagery (zoom in)'], ['sites', 'Site close-ups · HiRISE / CTX (24 mosaics)'], ['zooms', 'Site boxes &amp; pads (4 sites)'], ['slope', 'Slope colours at sites'], ['roads', 'Roads'], ['soft', 'Soft ground on roads'], ['tiov', 'Dust map (thermal inertia)'], ['camps', 'Camps (zoom in)'], ['depots', 'Depots'], ['stops', 'Sites'], ['boundary', 'Region boundary (overview only)'], ['trail', 'Crew trail']]
+      .map(([k, t]) => `<label><input type="checkbox" data-l="${k}" ${map.hasLayer(G[k]) ? 'checked' : ''}>${t}</label>`).join('') + `</div>
+    <div class="note" style="margin-top:6px">Sharp imagery shows: <label style="margin-right:10px"><input type="radio" name="cmode" value="all" ${roadsOnly ? '' : 'checked'}> whole view</label><label><input type="radio" name="cmode" value="roads" ${roadsOnly ? 'checked' : ''}> only ±50 km of roads</label><br>Source: ` + SOURCES.map(s => `<label style="margin-right:10px"><input type="radio" name="csrc" value="${s.id}" ${s.id === corrSrc.id ? 'checked' : ''}> ${s.name}</label>`).join('') + `<br>Zoom in (past level 6) to see it. With “only ±50 km of roads”, a light band marks the edge. Gaps in CTX coverage are filled with the Viking MDIM 2.1 mosaic (232 m) shown in grey. At 24 sites, sharper NASA Trek close-ups sit on top: controlled CTX (~6 m) and HiRISE (~25–50 cm) — zoom in up to level 18. CTX and HiRISE are uncontrolled mosaics — they may sit a few hundred metres off true position.</div>
+    <div class="legend" style="margin-top:8px"><span><i style="background:var(--h1)"></i>Habitat 1 route</span><span><i style="background:var(--h2)"></i>Habitat 2 loop</span>
+    <span><i style="background:var(--dep)"></i>Supply depot (≤800 km)</span><span><i style="background:#fff;height:6px;width:6px;border-radius:50%"></i>Camp (end of sol)</span>
+    <span><i style="background:#e6e9ef;height:3px"></i>Link road H1 ↔ H2</span><span><i style="background:#c13cff;opacity:.6;height:8px"></i>Soft ground (dust)</span><span><i style="border-top:2px dotted #fff;height:0;background:none"></i>Region boundary (overview)</span><span><i style="background:var(--teal);border-radius:50%"></i>Crew</span><span><i style="background:#fff;transform:rotate(45deg);width:9px;height:9px"></i>Active rover site</span><span><i style="background:#fff;border-radius:50%;width:9px;height:9px"></i>Landing / planned site</span></div></div>
+    <p class="note">Data: NASA MGS MOLA terrain (USGS), NASA MRO HiRISE terrain (UArizona/USGS), published landing coordinates. Made with AI assistance (Claude).</p>`;
+  const p = document.getElementById('panel'); p.innerHTML = h;
+  p.querySelectorAll('[data-r]').forEach(b => { b.classList.toggle('on', b.dataset.r === region); b.onclick = () => setRegion(b.dataset.r); });
+  p.querySelectorAll('[data-stay]').forEach(b => { b.classList.toggle('on', +b.dataset.stay === STAY); b.onclick = () => { STAY = +b.dataset.stay; sol = 0; slider.value = 0; setRegion(region); }; });
+  p.querySelectorAll('input[name=csrc]').forEach(r => r.onchange = () => setCorrSource(r.value));
+  const sw = p.querySelector('#softsw'); if (sw) sw.onchange = () => { SOFT = sw.checked; setRegion(region); };
+  p.querySelectorAll('input[name=cmode]').forEach(r => r.onchange = () => { roadsOnly = r.value === 'roads'; setCorrSource(corrSrc.id); });
+  p.querySelectorAll('[data-l]').forEach(cb => cb.onchange = () => { const g = G[cb.dataset.l]; cb.checked ? g.addTo(map) : map.removeLayer(g); if (cb.dataset.l === 'corridor') { cb.checked ? G_FILL.addTo(map) : map.removeLayer(G_FILL); } });
+  p.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => {
+    sol = +tr.dataset.sol; slider.value = sol; drawCrew();
+    if (tr.dataset.ll) { const [a, b] = tr.dataset.ll.split(',').map(Number); map.flyTo([a, b], 6); }
+    else { const e = tlAt(region, sol + 1); map.flyTo([e.lat, e.lon], 5); }
+  });
+}
+
+function softCard() {
+  return `<div class="card" style="border-color:#c13cff66"><h3 style="color:#d58bff">Soft ground on the roads</h3>
+    <p style="margin:0 0 6px"><b>${fmt(SF.total_soft_km)} of ${fmt(SF.total_km)} km</b> of road (${Math.round(100 * SF.total_soft_km / SF.total_km)}%) crosses loose dust (thermal inertia &lt; 100). Almost all of it is on three legs: Viking 1 → AP-9, Viking 2 → Spirit, and the link road. Both habitats sit on firm ground.</p>
+    <label style="display:block;margin:6px 0"><input type="checkbox" id="softsw" ${SOFT ? 'checked' : ''}> <b>Scenario:</b> drive soft ground at half speed (${SF.kmh} km/h)</label>
+    <div class="note">Measured plan: H1 ${D.regions.H1.summary.total_sols} · H2 ${D.regions.H2.summary.total_sols} sols. Scenario: H1 ${SF.scenario.H1.summary.total_sols} · H2 ${SF.scenario.H2.summary.total_sols} sols. The slowdown is an assumption (no rover speed on dust at this scale has been measured); the soft ground itself is measured.</div></div>`;
+}
+function calendarCard() {
+  const C = D.calendar, t0 = Date.parse(C.start), t1 = Date.parse(C.end), X = d => (100 * (Date.parse(d) - t0) / (t1 - t0));
+  const seg = (a, b, col, tip, lab) => { const l = Math.max(0, X(a)), r = Math.min(100, X(b)); if (r <= l) return ''; return `<div title="${tip}" style="position:absolute;left:${l}%;width:${r - l}%;top:2px;bottom:2px;background:${col};border-radius:3px;overflow:hidden;white-space:nowrap;font-size:9.5px;color:#0b1220;padding-left:2px">${lab || ''}</div>`; };
+  const row = (name, inner) => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:74px;font-size:11px;color:#9aa4b5">${name}</div><div style="flex:1;position:relative;height:16px;background:#ffffff08;border-radius:3px">${inner}</div></div>`;
+  const fmtD = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', {month: 'short', year: 'numeric', timeZone: 'UTC'});
+  let years = ''; for (let y = 2031; y <= 2037; y++) years += `<div style="position:absolute;left:${X(y + '-01-01')}%;top:0;bottom:0;border-left:1px solid #ffffff22"><span style="position:absolute;top:-1px;left:2px;font-size:9.5px;color:#7d889b">${y}</span></div>`;
+  const seasons = C.seasons.map((q, i) => seg(q.ls0, q.ls180, '#5ad19a55', `MY ${q.my} calm half (Ls 0–180)`) + (C.seasons[i + 1] ? seg(q.ls180, C.seasons[i + 1].ls0, '#ff9a3c55', `MY ${q.my} dust season (Ls 180–360)`) : '')).join('');
+  const rows = C.missions.map(m => {
+    const c = COL[m.hid];
+    return row(`${m.hid} cargo`, seg(m.cargo_dep, m.cargo_land, '#8ab6ff66', 'cargo + robots in transit (~350 days)') + seg(m.cargo_land, m.robots_done, '#4a90ff', 'robots place depots', 'robots')) +
+      row(`${m.hid} crew`, seg(m.crew_dep, m.crew_land, '#e6e9ef55', 'crew transit (~180 days)') + seg(m.crew_land, m.loop0, c + '55', `set up + local science (${m.wait_sols} sols)`) +
+        seg(m.loop0, m.loop1, c, `research loop (${m.loop_sols} sols)`, 'loop') + seg(m.loop1, m.leave, c + '33', `spare (${m.spare_sols} sols)`) + seg(m.leave, m.home, '#e6e9ef55', 'return (~180 days)'));
+  }).join('');
+  const li = m => `<li><b style="color:${COL[m.hid]}">Mission ${m.hid === 'H1' ? 1 : 2} · ${m.hid === 'H1' ? 'Habitat 1 (ice)' : 'Habitat 2 (sun)'}</b>: cargo + robots launch ${fmtD(m.cargo_dep)}, land ${fmtD(m.cargo_land)}, depots done ${fmtD(m.robots_done)} · crew launch ${fmtD(m.crew_dep)}, land ${fmtD(m.crew_land)} · <b>loop ${fmtD(m.loop0)} → ${fmtD(m.loop1)}</b> (starts at Mars Year ${m.my} spring equinox, ends before the dust season of ${fmtD(m.ls180)}) · leave Mars ${fmtD(m.leave)} (500-sol stay), home ${fmtD(m.home)}. Robots get ${m.robot_window_sols} sols; ${m.spare_sols} sols spare.</li>`;
+  return `<div class="card" style="border-color:#e6e9ef44"><h3>Mission calendar — a scenario</h3>
+    <div style="position:relative;margin:6px 0 2px 80px;height:12px">${years}</div>
+    ${row('Mars', seasons)}${rows}
+    <div class="note" style="margin:4px 0 8px">Green = calm half of the Mars year · orange = dust season · blue = robots placing depots · bold = research loop.</div>
+    <ul style="margin:0 0 8px 16px;padding:0;font-size:12px;line-height:1.45">${C.missions.map(li).join('')}</ul>
+    <div class="warn">This is a scenario, not a NASA schedule: as of August 2026 NASA publishes no date for a crewed Mars landing. Dates follow real orbital mechanics — launch windows every ~26 months (Mars oppositions 2031, 2033, 2035), cargo one window ahead (NASA DRA 5.0), and Mars Year 39 starting 30 Sep 2026 — so each loop starts at a northern spring equinox.</div></div>`;
+}
+function robotCard(sel) {
+  const R_ = D.robots, m = R_.meta, w = m.window;
+  const rows = sel.map(hid => R_[hid].robots.map(rb => `<tr><td><b style="color:${COL[hid]}">${rb.id}</b> ${rb.dir}</td><td class="n">${rb.n}</td><td class="n">${fmt(rb.km)}</td><td class="n">${rb.sols}</td></tr>`).join('')).join('');
+  const worst = Math.max(...sel.map(h => Math.max(...R_[h].robots.map(r => r.sols)))), far = Math.max(...sel.map(h => Math.max(...R_[h].robots.map(r => r.km))));
+  const vmin = (m.kmh * worst / w).toFixed(1), kmsol = Math.round(far / w);
+  const bar = (v, c, t) => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:84px;font-size:11px;color:#9aa4b5">${t}</div><div style="flex:1;height:8px;background:#ffffff12;border-radius:4px;position:relative"><div style="width:${Math.min(100, 100 * v / w)}%;height:8px;background:${c};border-radius:4px"></div></div><div style="width:58px;text-align:right;font-size:11px">${v} sols</div></div>`;
+  return `<div class="card" style="border-color:#4a90ff66"><h3 style="color:#8ab6ff">Robots go first — supply depots</h3>
+    <div class="note" style="margin-bottom:6px">${sel.reduce((a, h) => a + R_[h].depots, 0)} depots, one every ${m.depot_km} km of road. Two robots per habitat leave from the habitat in opposite directions; each parks at its last depot as a spare rover. Robot pace ${m.kmh} km/h, ${m.h_sol} driving hours per sol, no rest sols.</div>
+    <table class="t"><tr><th>Robot</th><th class="n">Depots</th><th class="n">Road km</th><th class="n">Sols</th></tr>${rows}</table>
+    <div style="margin-top:8px">${sel.map(h => bar(Math.max(...R_[h].robots.map(r => r.sols)), COL[h], `${h} · 2 robots`) + bar(R_[h].one_robot_sols, COL[h] + '88', `${h} · 1 robot`)).join('')}${sel.length > 1 ? bar(R_.LINK.sols, '#e6e9ef', 'Link road') : ''}
+      <div class="note">Bars to ${w} sols: the time between cargo landing and crew landing (NASA DRA 5.0: cargo one launch window ~26 months earlier).</div></div>
+    <div class="warn" style="margin-top:8px">Time is not the problem — speed is. The farthest depot is ~${fmt(far)} km by road from its habitat, so a robot must average <b>~${kmsol} km per sol</b> (≥ ${vmin} km/h at ${m.h_sol} h/sol) to finish in time. Perseverance's best day is 412 m (~${Math.round(far / w * 1000 / 412)}× short), and self-driving it covers ~100 m per hour (~${Math.round(vmin * 10)}× short). More robots don't help: some depot is always half a loop away. The plan needs a new class of fast autonomous rover.</div></div>`;
+}
+function climateCard() {
+  const c = D.climate, h1 = LOOP('H1'), h2 = LOOP('H2'), yr = c.year;
+  const col = ['#5ad19a', '#9be15d', '#ff9a3c', '#ff5d5d'];
+  let x = 0;
+  const segs = c.seasons.map((q, i) => { const w = 100 * q[1] / yr, el = `<div title="${q[0]} · ${q[1]} sols · ${q[2]}" style="position:absolute;left:${x}%;width:${w}%;top:0;bottom:0;background:${col[i]}33;border-right:1px solid #0006"><span style="position:absolute;left:3px;top:1px;font-size:10px;color:#cfd6e4;white-space:nowrap">${q[0]} ${q[1]}</span></div>`; x += w; return el; }).join('');
+  const loop = (n, cc, top) => `<div title="loop ${n} sols" style="position:absolute;left:0;width:${100 * n / yr}%;top:${top}px;height:5px;border-radius:3px;background:${cc}"></div>`;
+  const spare1 = c.calm - h1, spare2 = c.calm - h2;
+  return `<div class="card" style="border-color:#5ad19a66"><h3 style="color:#7fe3b3">Climate &amp; when to drive</h3>
+    <div style="position:relative;height:40px;border-radius:6px;overflow:hidden;background:#ffffff0a;margin:4px 0 2px">${segs}${loop(h1, '#ff6b35', 19)}${loop(h2, '#f5b800', 27)}
+      <div style="position:absolute;left:${100 * c.calm / yr}%;top:0;bottom:0;border-left:2px dashed #fff"></div></div>
+    <div class="note" style="margin-bottom:8px">One Mars year = ${yr} sols. Dashed line = start of the dust season (Ls 180, sol ${c.calm}). Bars = H1 and H2 loops started at the northern spring equinox (Ls 0).</div>
+    <div class="ok" style="margin-bottom:8px"><b>Start both loops at the northern spring equinox</b> and they finish before the dust season: H1 with ${spare1} sols to spare, H2 with ${spare2}. Every planet-wide dust storm on record began between Ls 180° and 310°. Starting up to ~${Math.min(spare1, spare2)} sols late still works. For Habitat 1 this also avoids northern winter.</div>
+    <div><b style="color:#f5b800">Habitat 2 · Sun colony</b> <span class="note">${c.h2.src}</span><br>Typical sol: high ${c.h2.high} °C, low ${c.h2.low} °C, gusts ~${c.h2.gust} m/s, pressure ~${c.h2.p_lo}–${c.h2.p_hi} Pa. Thousands of dust devils passed but none were seen.<br>
+      <span style="color:#ffb3b3">Power lesson:</span> InSight's panels fell from ${fmt(c.h2.power0)} to ${c.h2.power1} Wh/sol under settled dust (${c.h2.power_end} Wh/sol at the end, Dec 2022). A crew can do what InSight couldn't: clean the panels — plus a non-solar backup for storms.</div>
+    <div style="margin-top:8px"><b style="color:#ff6b35">Habitat 1 · Ice colony</b> <span class="note">${c.h1.src}</span><br>Coldest predawn ${c.h1.low} °C (about the CO₂ frost point); a thin water-frost layer every winter; pressure ${c.h1.p_lo}–${fmt(c.h1.p_hi)} Pa through the year. Habitat 1 is 8° closer to the equator, so its winters are likely a little milder — not measured.</div>
+    <div class="note" style="margin-top:8px">Dust season (Ls 180–360): the 2018 storm began at Ls ~${c.storm2018.ls}°, Curiosity measured opacity ${c.storm2018.tau}, and solar-powered Opportunity never woke up.</div></div>`;
+}
+function radCard() {
+  const r = D.rad, d = sols => Math.round(sols * r.sol_days * r.surface), cr = Math.round(r.cruise * r.cruise_days);
+  const h1 = LOOP('H1'), h2 = LOOP('H2'), m500 = 2 * cr + d(500), m30 = 2 * cr + d(30);
+  const bar = (v, c) => `<div style="position:relative;height:7px;border-radius:4px;background:#ffffff14;margin:2px 0 8px"><div style="height:7px;border-radius:4px;width:${Math.min(100, 100 * v / 1000)}%;background:${c}"></div><div title="NASA limit ${r.limit} mSv" style="position:absolute;left:${100 * r.limit / 1000}%;top:-3px;width:2px;height:13px;background:#fff"></div></div>`;
+  return `<div class="card" style="border-color:#4fc3f766"><h3 style="color:#7fd3ff">Radiation dose (Curiosity RAD)</h3>
+    <div class="note" style="margin-bottom:6px">Measured by Curiosity's RAD: ${r.surface} mSv/day on the surface at Gale, ${r.cruise} mSv/day in cruise. White tick = NASA career limit ${r.limit} mSv (bars to 1,000 mSv).</div>
+    <div>H1 loop · ${h1} sols: <b>${d(h1)} mSv</b></div>${bar(d(h1), '#ff6b35')}
+    <div>H2 loop · ${h2} sols: <b>${d(h2)} mSv</b></div>${bar(d(h2), '#f5b800')}
+    <div>Cruise there + back (${r.cruise_days} days each): <b>${2 * cr} mSv</b></div>${bar(2 * cr, '#7fd3ff')}
+    <div>Whole mission, 500-sol stay: <b>${m500} mSv</b> · 30-sol stay: <b>${m30} mSv</b></div>${bar(m500, '#ff4d6d')}
+    <div class="warn">The roads are not the radiation problem: a full loop is ~${Math.round(100 * d(Math.max(h1, h2)) / r.limit)}% of the ${r.limit} mSv limit. The flight is — the cruise alone (${2 * cr} mSv) is over it. A crewed Mars mission needs faster transit or better spacecraft shielding; on the surface, the habitat and a storm shelter cover solar storms (NASA limit ${r.spe_limit} mSv per event).</div></div>`;
+}
+// ---------- other views ----------
+function hab() {
+  const z = D.zoom, m = D.road_m2;
+  const box = (k, c) => `<div class="card" style="border-color:${c}66"><h3 style="color:${c}">${z[k].site}</h3>
+    <p class="note">${z[k].px > 5 ? 'CTX' : 'HiRISE'} terrain model ${z[k].dtm} · ${z[k].px} m pixels, analysed at ${z[k].px > 5 ? '~22 m (~45 m slope baseline — slightly smoothed)' : '~12 m (25 m slope baseline)'}</p>
+    <table><tr><td>Slope median / 95%</td><td class="n">${z[k].median}° / ${z[k].p95}°</td></tr>
+    <tr><td>Pad-quality ground</td><td class="n">${z[k].padq}%</td></tr><tr><td>Too steep to walk (&gt;24.2°)</td><td class="n">${z[k].blocked}%</td></tr>
+    <tr><td>Walking zone 1 h / 2 h</td><td class="n">${z[k].walk[0]} / ${z[k].walk[1]} km²</td></tr>
+    <tr><td>Within 10 km walk-back</td><td class="n">${z[k].walk[2]} km²</td></tr></table>
+    <p style="margin:8px 0 2px"><b>Pad</b> ${z[k].pad[0].toFixed(5)}°, ${z[k].pad[1].toFixed(5)}°E<br><span class="note">${z[k].pad_note}</span></p>
+    <p style="margin:6px 0 0"><b>Habitat / camp</b> ${z[k].hab[0].toFixed(5)}°, ${z[k].hab[1].toFixed(5)}°E<br><span class="note">${z[k].hab_note}</span></p>
+    ${z[k].img ? `<p style="margin:10px 0 0"><button class="zbtn" onclick="goZoom('${k}')">Show slope map on the map →</button></p>
+    <p class="note" style="margin:4px 0 0"><span style="display:inline-block;width:10px;height:10px;background:#33cc8059;border:1px solid #33cc80"></span> pad-quality ground · <span style="display:inline-block;width:10px;height:10px;background:linear-gradient(90deg,#ffff00,#ff0000)"></span> steeper than 16.7° (red ≥ 35°) · ■ pad · ● habitat · checked window ${z[k].window_km2} km²</p>` : ''}</div>`;
+  document.getElementById('v-habitats').innerHTML = `<h2>Habitat sites checked on NASA terrain models</h2>
+    <p class="note">Rules: landing pad 100 m wide with no ground over 15°, tilted under 5° across 200 m; habitat 1–2 km from the pad (rocket plume rule);
+    1 km keep-out around the InSight and Curiosity landing spots; suited-astronaut walking speed from published human data (0.61 m/s on flat ground, impassable over 24.2°).</p>
+    <div class="card" style="border-color:${COL.H1}66"><h3 style="color:${COL.H1}">Why Habitat 1 is at AP-1</h3><p style="margin:0">AP-1 is one of three candidate landing sites (AP-1, AP-8, AP-9) where a 2025 NASA-funded study found geomorphological evidence of ice less than 1 m below the surface (Luzzi et al. 2025, <i>JGR Planets</i>). AP-1 and AP-9 are also SpaceX's prime Starship sites (LPSC 2021). AP-8 and AP-9 are 66 km and 58 km away — the first and last stops of Habitat 1's loop.</p></div>
+    <div class="grid">${box('H1', COL.H1)}${box('H2', COL.H2)}${box('GALE', '#5fd4c8')}${box('SPACEX', '#c9b8ff')}</div>
+    <div class="card"><h3>Terrain check: our maps match the landers</h3><table>
+      <tr><th>Point</th><th style="text-align:right">HiRISE</th><th style="text-align:right">MOLA</th><th style="text-align:right">Published</th></tr>
+      <tr><td>InSight lander</td><td class="n">−2,616 m</td><td class="n">${fmt(m.elev_insight)} m</td><td class="n">≈ −2,613 m</td></tr>
+      <tr><td>Curiosity, Bradbury Landing</td><td class="n">−4,501 m</td><td class="n">${fmt(m.elev_bradbury)} m</td><td class="n">≈ −4,500 m</td></tr>
+      <tr><td>AP-1 (Habitat 1) · CTX</td><td class="n">−3,939 m</td><td class="n">−3,920 m</td><td class="n">≈ −4,130 m*</td></tr></table>
+      <p class="note" style="margin-bottom:0">HiRISE column = local model (CTX for AP-1). *From a news write-up of the AP study; ~200 m below both NASA maps at this point, so it likely describes the mapped area or a different reference level. AP-1's CTX model agrees with MOLA to a median of 24 m (its own QA report).</p></div>
+    <div class="card"><h3>Habitat 2 → Gale road on 463 m terrain</h3>
+      <p style="margin:0">${m.km} km road vs ${m.straight} km straight (×${m.factor}) · out ${m.sols_out} sols, back ${m.sols_back} sols · steepest ${m.max_slope}° · ${fmt(m.down)} m down to Gale, ${fmt(m.up)} m up</p></div>`;
+}
+function method() {
+  document.getElementById('v-method').innerHTML = `<h2>Method &amp; data</h2>
+  <div class="grid">
+  <div class="card"><h3>The plan</h3><p style="margin:0">Two crew land together at one main habitat per mission. Every landing site and planned site on Mars belongs to its nearest habitat. From each habitat the crew drives one loop that visits every site in its region and returns home. Robots land first and place a supply depot at least every 800 km of road.</p></div>
+  ${D.calendar ? calendarCard().replace('style="border-color:#e6e9ef44"', 'style="border-color:#e6e9ef44;grid-column:1/-1;column-span:all"') : ''}
+  <div class="card" style="grid-column:1/-1;column-span:all"><h3>Rover &amp; crew limits — checked against Curiosity</h3>
+    <table class="t"><tr><th>What</th><th>Value</th><th>Basis</th></tr>
+    <tr><td>Curiosity's own tilt (telemetry, 690 waypoints, Mount Sharp)</td><td>mean 10.0° · p95 18.8° · max 29.1°</td><td>Measured</td></tr>
+    <tr><td>Same ground on HiRISE (25 m slope, 608 clean waypoints)</td><td>mean 10.2° · <b>soft limit 21.1°</b> (p95) · <b>hard limit 31.6°</b> (p99)</td><td>Measured</td></tr>
+    <tr><td>Our roads (MOLA 463 m)</td><td>ground over 12° blocked · steepest cell 12.0° · p95 ≤ 3.1° on every leg</td><td>Modelled</td></tr>
+    <tr><td>Crew rover speed</td><td>12 km/h on flat ground, slower uphill, braking downhill, side-slope penalty</td><td>= Apollo 15 rover's best on level ground (its average: 9.6 km/h)</td></tr>
+    <tr><td>If the rover only averages 9.6 km/h</td><td>H1 ${D.speed96.H1} sols · H2 ${D.speed96.H2} sols — still inside the 372-sol calm season and the 500-sol stay</td><td>Modelled</td></tr>
+    <tr><td>Curiosity's real pace</td><td>median 23.5 m per driving sol · drove on 22% of sols → 6.5 m per sol</td><td>Measured</td></tr>
+    <tr><td>Suited astronaut</td><td>0.61 m/s on flat ground · soft 16.7° · hard 24.2° · 10 km walk-back</td><td>Modelled from published data</td></tr></table>
+    <p class="note" style="margin:6px 0 0">Why only 12° when Curiosity drove 21°? A 463 m MOLA cell averages out local relief, so a 12° cell can hide steeper ground at rover scale — the road limit is deliberately conservative, and the final approach to each site is checked on 1 m HiRISE / 22 m CTX. Curiosity data: HiRISE DTM DTEEC_019698_1750_019988_1750_U01 + MSL waypoint telemetry. Open issue: the DTM sits 27.3 m above the rover's reported elevation (σ 6.7 m) — unexplained. Crew speed: Apollo 15 LRV traverse record (NASA).</p></div>
+  <div class="card"><h3>Routes</h3><p style="margin:0">Visit order: Habitat 2 drives the exact shortest closed loop (Held-Karp). Habitat 1 (v5, 15 Nov) follows a set route instead: the 6,258 km Phoenix → Opportunity crossing of empty plains was dropped for a new Phoenix → Chryse road (3,976 km on MOLA 463 m, steepest 11.4°), and the Pathfinder – Rosalind Franklin – Opportunity branch is driven out and back (research on the first visit only). H1: 18,499 km, 289 sols (was 17,870 km, 275 sols). Short legs can come out a little shorter than straight on a grid; those are capped at the straight-line distance. Two passes. (1) Each leg routed with A* on the MGS MOLA global terrain at 5.2 km cells, slopes over 5° blocked so large crater rims are obstacles. (2) Every leg re-routed on the full-resolution 463 m MOLA terrain in a ±40 km strip around pass 1 (Dijkstra, 16 directions, ground over 12° blocked, loose dust made costly so roads bend around it). Travel time uses the slope rules of the Gale road (slower uphill, braking downhill, side-slope penalty). Roads came out 1–6% longer than straight lines; 463 m roads stay within 2% of pass 1, except Gale (572 km instead of a 788 km detour).</p></div>
+  <div class="card"><h3>Time</h3><p style="margin:0">Crew rover 12 km/h, 8 h driving per sol, slower uphill, downhill and on side slopes. Driving sols = routed travel time ÷ 8 h. One rest sol after six driving sols. Five research sols at each site. One camp at the end of every driving sol.</p></div>
+  <div class="card"><h3>Soft ground</h3><p style="margin:0">Every road sampled every 2 km on the NASA MGS TES night thermal-inertia map (Putzig &amp; Mellon 2007, ~3 km pixels, 83–99% measured pixels per leg). Thermal inertia below 100 J m⁻² K⁻¹ s⁻½ means loose dust; 100–150 fine-grained; above 150 sand, crust or rock. Spirit was trapped in soft soil in 2009, so soft stretches are flagged on the map and in the leg tables. The half-speed switch is a scenario, not a measurement. Checks: InSight 236, Opportunity 186, Gale 393 — in line with published landing-site values.</p></div>
+  <div class="card"><h3>Climate &amp; seasons</h3><p style="margin:0">Measured lander weather, not a model. Habitat 2: InSight's weather sensors (TWINS, pressure sensor), 1.2 km away; Banfield et al. 2020, Nature Geoscience 13. Habitat 1: no lander has measured at 40°N on Arcadia; Viking Lander 2 (47.6°N, Utopia) is the nearest northern-plains record. Season lengths: northern spring 194, summer 178, autumn 142, winter 154 sols (NASA). Dust season Ls 180–360 (perihelion); all recorded planet-wide storms began in Ls 180–310. InSight power: 5,000 → 500 Wh/sol from dust on its panels (NASA/JPL, 2022). Next step: Mars Climate Database model values for each habitat's exact spot.</p></div>
+  <div class="card"><h3>Radiation</h3><p style="margin:0">Dose = time × measured dose rate. Surface: 0.64 ± 0.12 mSv/day (Curiosity RAD at Gale, 300 sols near solar maximum; Hassler et al. 2014, Science 343). Cruise: 1.84 mSv/day inside the MSL spacecraft (Zeitlin et al. 2013, Science 340); 180-day transits each way. 1 sol = 1.0275 days. Limits: NASA-STD-3001 career limit 600 mSv; 250 mSv per solar particle event; surface GCR design target below 0.8 mSv/day. RAD measured at −4.4 km; Habitat 1 (−3.9 km) and Habitat 2 (−2.6 km) sit under slightly less air, so their dose is likely a little higher — not modelled. Time inside the habitat and rover shielding would lower it — not modelled.</p></div>
+  <div class="card"><h3>Honest limits</h3><p style="margin:0">463 m cells catch craters of about 1.5 km and up; boulders and small craters need HiRISE checks on the final approach. The ±40 km strip cannot escape dust areas 1,000+ km wide (north of Tharsis, Elysium–Amazonis). Spirit → Mars 3 touches the 12° limit in the southern highlands. Legs were joined at pass-1 grid cells (5.2 km), so each road ends 0.3–3 km from its site; that last stretch is drawn dashed and is not slope-checked. AP site positions are HiRISE image centres (the mapped areas may differ by a few km); AP-1 is checked on 22 m CTX terrain, so its slopes are slightly smoothed. Tianwen-3 zones are approximate — China picks its final site by the end of 2026. ${BASENOTE}.</p></div>
+  </div>
+  <div class="card"><h3>NASA data used</h3><ul style="margin:0;padding-left:18px">
+    <li>MGS MOLA global digital elevation model, 463 m (NASA / USGS Astrogeology)</li>
+    <li>MRO CTX controlled terrain model J20_052424_2201__J20_052490_2201 at AP-1, Habitat 1 (NASA / MSSS / USGS)</li>
+    <li>MRO HiRISE controlled terrain models: DTEEC_037262_1845_036761_1845 (InSight), DTEEC_010573_1755_010639_1755 (Gale), DTEEC_060706_2195_060416_2195 (SpaceX candidate site) (NASA / University of Arizona / USGS)</li>
+    <li>MRO CTX controlled terrain model near InSight (NASA / MSSS / USGS) — cross-check</li>
+    <li>HiRISE image pages for site positions: ESP_052490_2200 (AP-1), ESP_043220_2210 (AP-8), ESP_060323_2205 (AP-9), ESP_060706_2195 (SpaceX candidate)</li>
+    <li>Landing coordinates of Mars 3, Viking 1 &amp; 2, Pathfinder, Spirit, Opportunity, Phoenix, Curiosity, InSight, Perseverance, Zhurong (NASA/JPL and mission publications)</li>
+    <li>MGS TES thermal inertia maps, night 2007 + interpolation mask (Putzig &amp; Mellon 2007, Icarus 191; NASA PDS Geosciences mgst_9001)</li>
+    <li>InSight APSS / TWINS measured weather (Elysium Planitia) and Viking Lander 2 meteorology (Utopia Planitia)</li>
+    <li>MSL Radiation Assessment Detector (RAD): surface and cruise dose rates (Hassler et al. 2014; Zeitlin et al. 2013)</li>
+    <li>USGS Astrogeology STAC catalogue (data discovery)</li>
+    <li>Zoomed imagery (live tiles): Caltech Murray Lab CTX global mosaic beta01 (NASA/JPL/MSSS/Caltech/Esri), gaps filled with Viking MDIM 2.1 shown in grey (NASA/USGS); 24 site close-ups — controlled CTX block mosaics (Arcadia, Arcadia Planitia, Erebus Montes, Cerberus, Gale, Jezero, Gusev, Viking 1, Viking 2, Hypanis delta, InSight) and HiRISE site mosaics (Curiosity, Perseverance/Jezero, Spirit/Columbia Hills, Opportunity, Phoenix, Pathfinder, Viking 1 and 2, InSight) (NASA/JPL/MSSS/University of Arizona, via NASA Mars Trek WMTS); HiRISE global mosaic (NASA Trek)</li><li>Other base options: MOLA/HRSC blended relief (NASA/JPL/ESA/DLR/USGS/Esri), Viking MDIM 2.1 (NASA/USGS via NASA Trek)</li></ul></div>
+  <div class="card"><h3>Publications</h3><ul style="margin:0;padding-left:18px">
+    <li>Luzzi, E., Heldmann, J.L., Williams, K.E., Nodjoumi, G., Deutsch, A., Sehlke, A. (2025). Geomorphological evidence of near-surface ice at candidate landing sites in northern Amazonis Planitia, Mars. <i>JGR Planets</i> 130(5), doi:10.1029/2024JE008724</li>
+    <li>“SpaceX Starship Landing Sites on Mars”, 52nd Lunar and Planetary Science Conference poster (2021) — prime sites AP1, AP9; backup AP8</li>
+    <li>Suited walking: Minetti et al. 2002; Kram et al. 1997; Norcross et al. 2010 (NASA/TP-2010-216125); Vos et al. 2007 · Pad rules: JPL MSL landing-site engineering constraints; Hoffman &amp; Bussey 2016</li></ul></div>
+  <div class="card"><h3>AI disclosure</h3><p style="margin:0">Code, maps and text were made with AI assistance (Claude) and checked against the data above. Team MartianAutonomy · Md Asifuzzaman · NASA Space Apps Challenge 2026.</p></div>`;
+}
+
+// ---------- navigation ----------
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  const v = b.dataset.v;
+  document.getElementById('mapview').style.display = v === 'map' ? '' : 'none';
+  document.getElementById('views').classList.toggle('on', v !== 'map');
+  document.getElementById('views').style.display = v === 'map' ? 'none' : 'block';
+  document.querySelectorAll('#views > section').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
+  if (v === 'map') setTimeout(() => map.invalidateSize(), 50);
+});
+// ---------- phone layout: the side panel becomes a bottom sheet (peek / half / full) ----------
+const MOB = () => innerWidth <= 820;
+const SIDE = document.getElementById('side'), MAIN = document.getElementById('mapview');
+let SHEET = 'peek';
+function sheetPx(st) { const h = MAIN.clientHeight || innerHeight; return st === 'full' ? h - 48 : st === 'half' ? Math.round(h * .5) : 150; }
+function sheet(st) {
+  if (st) SHEET = st;
+  if (!MOB()) { MAIN.style.removeProperty('--sheet'); return; }
+  MAIN.style.setProperty('--sheet', sheetPx(SHEET) + 'px');
+  document.getElementById('grabtxt').textContent = SHEET === 'full' ? 'Tap to show the map' : SHEET === 'half' ? 'Tap for full panel' : 'Tap or swipe up for details';
+  if (SHEET === 'peek') SIDE.scrollTop = 0;
+}
+function FITPAD() { return {paddingTopLeft: [30, 30], paddingBottomRight: [30, 30 + (MOB() ? sheetPx(SHEET) + 80 : 0)]}; }
+function setHdr() { document.documentElement.style.setProperty('--hdr', document.querySelector('header').offsetHeight + 'px'); }
+(() => {
+  const g = document.getElementById('grab'); let y0 = null, h0 = 0, moved = false;
+  const end = tap => { if (y0 == null) return; SIDE.classList.remove('drag'); MAIN.classList.remove('dragging'); y0 = null;
+    if (!moved) { if (tap) sheet(SHEET === 'peek' ? 'half' : SHEET === 'half' ? 'full' : 'peek'); else sheet(); return; }
+    const h = SIDE.offsetHeight; sheet(['peek', 'half', 'full'].map(x => [x, Math.abs(sheetPx(x) - h)]).sort((a, b) => a[1] - b[1])[0][0]); };
+  g.addEventListener('pointerdown', e => { if (!MOB()) return; y0 = e.clientY; h0 = SIDE.offsetHeight; moved = false; g.setPointerCapture(e.pointerId); SIDE.classList.add('drag'); MAIN.classList.add('dragging'); });
+  g.addEventListener('pointermove', e => { if (y0 == null) return; const dy = e.clientY - y0; if (Math.abs(dy) > 6) moved = true; if (moved) MAIN.style.setProperty('--sheet', Math.max(110, Math.min(MAIN.clientHeight - 40, h0 - dy)) + 'px'); });
+  g.addEventListener('pointerup', () => end(true));
+  g.addEventListener('pointercancel', () => end(false));
+  // tapping a leg row on a phone drops the sheet so the map is visible
+  SIDE.addEventListener('click', e => { if (MOB() && e.target.closest('tr.click')) sheet('peek'); });
+})();
+setHdr(); addEventListener('resize', () => { setHdr(); sheet(); });
+sheet('peek');
+buildBand();
+hab(); method(); setRegion('BOTH');
+</script>
+</body>
+</html>

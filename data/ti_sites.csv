@@ -1,0 +1,20 @@
+region,site,kind,lat,lon_e,ti,class,measured_pixel
+H1,"Main Habitat 1 · Ice colony",habitat,39.809,202.081,156,firm,True
+H1,"AP-8 ice site",planned,40.735,201.272,175,firm,True
+H1,"SpaceX candidate site",planned,39.090,189.790,133,caution,True
+H1,"Phoenix",landing,68.220,234.250,88,soft,True
+H1,"Opportunity",landing,-1.950,354.470,186,firm,True
+H1,"Rosalind Franklin site",planned,18.200,335.450,444,firm,True
+H1,"Pathfinder",landing,19.130,326.780,401,firm,True
+H1,"Tianwen-3 zone (Chryse)",planned,23.500,315.000,302,firm,True
+H1,"Viking 1",landing,22.270,312.050,280,firm,True
+H1,"AP-9 ice site",planned,40.016,203.330,239,firm,True
+H2,"Main Habitat 2 · Sun colony",habitat,4.492,135.605,223,firm,True
+H2,"Tianwen-3 zone (Utopia)",planned,23.500,115.000,234,firm,True
+H2,"Zhurong",landing,25.070,109.930,258,firm,True
+H2,"Perseverance",active rover,18.440,77.450,311,firm,True
+H2,"Viking 2",landing,47.640,134.290,244,firm,True
+H2,"Spirit",landing,-14.570,175.470,312,firm,True
+H2,"Mars 3",landing,-45.000,202.000,298,firm,True
+H2,"Curiosity",active rover,-4.590,137.440,393,firm,True
+H2,"InSight (home site H2)",home,4.502,135.623,236,firm,True

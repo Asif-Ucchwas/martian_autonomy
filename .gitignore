@@ -1,0 +1,20 @@
+# big terrain models and downloads stay local
+dtm/
+*.tif
+*.tiff
+*.img
+*.IMG
+*.zip
+
+# keys and secrets — never commit
+.env
+*.env
+secrets*
+.streamlit/secrets.toml
+
+# python / OS
+__pycache__/
+*.pyc
+.venv/
+mars/
+.DS_Store
