@@ -81,3 +81,7 @@ Code: MIT (see `LICENSE`). Data and imagery belong to their providers (NASA, USG
 ## Math and physics
 
 Every formula behind the map, with worked examples: [docs/MATH_AND_PHYSICS.md](docs/MATH_AND_PHYSICS.md)
+
+## Handbook
+
+How I planned, approached and prepared for the challenge, with the full math and physics: [docs/MartianAutonomy_Handbook.pdf](docs/MartianAutonomy_Handbook.pdf)
