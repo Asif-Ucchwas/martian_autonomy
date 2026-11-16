@@ -677,6 +677,8 @@ header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:
 .brand span{color:var(--teal)}
 .sub{color:var(--muted);font-size:13px}
 nav{margin-left:auto;display:flex;gap:6px}
+nav a.bk{display:inline-block;background:transparent;color:var(--teal);border:1px solid var(--teal);padding:6px 12px;border-radius:8px;text-decoration:none;font:inherit;font-weight:600}
+nav a.bk:hover{background:var(--teal);color:#06231f}
 nav button,.seg button{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit}
 nav button.on,.seg button.on{background:var(--teal);color:#06231f;border-color:var(--teal);font-weight:700}
 main{display:flex;height:calc(100% - var(--hdr,54px))}
@@ -759,6 +761,7 @@ footer{position:absolute;right:8px;top:8px;z-index:500;font-size:11px;color:#cfd
   .sub{display:none}
   nav{margin-left:auto;gap:4px}
   nav button{padding:8px 9px;font-size:12.5px}
+  nav a.bk{padding:8px 9px;font-size:12.5px}
   main{display:block;position:relative;height:calc(100vh - var(--hdr,48px));height:calc(100dvh - var(--hdr,48px))}
   #mapwrap{position:absolute;inset:0}
   aside{position:absolute;left:0;right:0;bottom:0;width:100%;height:var(--sheet,150px);z-index:1001;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;padding:0 12px 16px;box-shadow:0 -8px 24px rgba(0,0,0,.45);transition:height .25s ease;overscroll-behavior:contain}
@@ -791,12 +794,13 @@ footer{position:absolute;right:8px;top:8px;z-index:500;font-size:11px;color:#cfd
   .lowzoom .stoplbl{display:none}
   #views{padding:14px}
 }
+@media (max-width:420px){nav button,nav a.bk{padding:8px 7px}.brand{letter-spacing:.04em}}
 </style>
 </head>
 <body>
 <header>
   <div><div class="brand">MARTIAN <span>AUTONOMY</span></div><div class="sub">Two habitats · two research regions · every landing site by road</div></div>
-  <nav><button data-v="map" class="on">Map</button><button data-v="habitats"><span class="lg">Habitat sites</span><span class="sm">Sites</span></button><button data-v="method">Method<span class="lg"> &amp; data</span></button></nav>
+  <nav><button data-v="map" class="on">Map</button><button data-v="habitats"><span class="lg">Habitat sites</span><span class="sm">Sites</span></button><button data-v="method">Method<span class="lg"> &amp; data</span></button><a class="bk" href="docs/MartianAutonomy_Handbook.pdf" target="_blank" rel="noopener" title="Handbook (PDF)"><span class="lg">Handbook</span><span class="sm">Book</span></a></nav>
 </header>
 <main id="mapview">
   <div id="mapwrap">
